@@ -1,0 +1,11 @@
+@font-face {
+    font-family: Circe;
+    src: local('Circe'),
+    url("fonts/circe.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: Circe-Bold;
+    src: local('Circe Bold'),
+    url("fonts/circe-bold.ttf") format("truetype");
+}
