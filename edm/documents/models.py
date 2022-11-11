@@ -189,12 +189,12 @@ class DocTemplates(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Категория типа документа'
     )
-    date_create = models.DateTimeField(
-        default=datetime.datetime.now,
+    date_create = models.DateField(
+        default=datetime.date.today,
         verbose_name='Дата создания шаблона'
     )
-    name = models.CharField(
-        max_length=250,
+    name = models.TextField(
+        max_length=1500,
         default='Шаблон',
         verbose_name='Наименование шаблона'
     )

@@ -1,7 +1,7 @@
 <template>
     <div class="doc-grid">
         <div class="grid-row category-chapter">
-            <b><center>Вид, тип, категория шаблона</center></b>
+            <b><center>Вид, тип, категория документа</center></b>
             <div>
                 <slot name="cat-ch"></slot>
             </div>
@@ -43,7 +43,7 @@
     width: 90vw;
     display: grid;
     row-gap: 25px;
-    grid-template-rows: repeat(4,1fr);
+    grid-template-rows: auto auto auto auto;
     justify-items: stretch;
   }
   .grid-row{
