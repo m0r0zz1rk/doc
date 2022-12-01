@@ -3,7 +3,7 @@
     <div id="main-content">
         <AdministrativeGrid>
             <div class="GridContent">
-                <div class="table-content">
+                <div v-if="seenContent">
                     <div style="position:relative;">
                         <div class="inl-blocks">
                             <a href="#" @click = "addSidebox();">
@@ -47,6 +47,9 @@
                             <tr v-for="kind in listKinds">
                                 <td>{{ kind.kind }}</td>
                                 <td>
+                                    <a href="javascript:void(0)" @click="editSidebox(kind.id, kind.kind);">
+                                        <font-awesome-icon icon="fa-solid fa-pen-to-square" :style="{ color: '#373c59' }"/>
+                                    </a>&nbsp;&nbsp;
                                     <a href="javascript:void(0)" @click="deleteKind(kind.id);">
                                         <font-awesome-icon icon="fa-solid fa-trash" :style="{ color: '#373c59' }"/>
                                     </a>
@@ -55,18 +58,54 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="load">
+                <div v-if="seenLoad">
                     <img src="../../assets/gifs/load.gif" style="margin: 0 auto;">
                 </div>
             </div>
         </AdministrativeGrid>
     </div>
-    <SideBox />
+    <SideBox>
+        <template v-slot:side-chb>
+            <input type="checkbox" id="side-checkbox" v-model="SideBoxchecked"/>
+        </template>
+        <template v-slot:sidebox-title>
+            <p v-bind:class="[AddClass]">Новый вид документа</p>
+            <p v-bind:class="[EditClass]">Изменение вида документа</p>
+            <p v-bind:class="[FindClass]">Поиск по видам документа</p>
+        </template>
+        <template v-slot:main-table-trs>
+            <tr>
+                <td>
+                    <center>Наименование:</center>
+                </td>
+                <td>
+                    <input ref="kind" type="text" class="form-control text-center">
+                </td>
+            </tr>
+        </template>
+        <template v-slot:sidebox-button>
+            <div v-bind:class="[AddClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', AddClass]"
+                    @click="addKind();">Добавить</button>
+            </div>
+            <div v-bind:class="[EditClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', EditClass]"
+                    @click="editKind();">Изменить</button>
+            </div>
+            <div v-bind:class="[FindClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', FindClass]"
+                    @click="findKinds();">Найти</button>
+            </div>
+        </template>
+    </SideBox>
 </template>
 
 <script>
 import AdministrativeGrid from '../../components/AdministrativeGrid.vue';
-import SideBox from '../../components/SideBox.vue';
+import SideBox from '../../components/sidebox_folder/SideBox.vue';
 import Header from "../../components/Header.vue";
 import LoadGif from "../../assets/gifs/load.gif";
 
@@ -74,6 +113,13 @@ export default {
     name: 'DocKinds',
     data() {
       return {
+        seenLoad: true,
+        seenContent: false,
+        SideBoxchecked: false,
+        AddClass: 'sidebox-deactive',
+        FindClass: 'sidebox-deactive',
+        EditClass: 'sidebox-deactive',
+        EditKindId: 0,
         listKinds: [],
         trs: '',
         buttonText: '',
@@ -104,8 +150,9 @@ export default {
                  return false
               }
             })
-            $('.load').empty();
-            $('.table-content').css('display', 'block');
+            this.seenContent = true
+            this.seenLoad = false
+
         },
         sorted(){
             if (this.sort == 'kind') {
@@ -116,45 +163,27 @@ export default {
             this.getKinds();
         },
         findKinds(){
-            this.getKinds($('#FindKind').val())
-            $('#side-checkbox').prop('checked', false);
+            this.getKinds(this.$refs.kind.value)
+            this.SideBoxchecked = false
             showBanner('.banner.success', 'Поиск завершен');
         },
         addSidebox(){
-            $('.side-title').html('Добавить новый вид документа');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            this.trs = `
-                <tr>
-                    <td>
-                        <center>Наименование:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="NewKind">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Добавить');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.addKind);
-            $('.sidebox-table-trs').html(this.trs);
+            this.AddClass = 'sidebox-active'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-deactive'
         },
         findSidebox(){
-            $('.side-title').html('Поиск вида документа');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            this.trs = `
-                <tr>
-                    <td>
-                        <center>Наименование:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindKind">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Поиск');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.findKinds);
-            $('.sidebox-table-trs').html(this.trs);
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-active'
+        },
+        editSidebox(id, name){
+            this.EditKindId = id
+            this.SideBoxchecked = true,
+            this.$refs.kind.value = name
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-active'
+            this.FindClass = 'sidebox-deactive'
         },
         async addKind(){
             const add = await fetch(this.$store.state.backendUrl+'/api/docs/new_kind/', {
@@ -165,7 +194,7 @@ export default {
                 'Authorization': 'Token '+localStorage.getItem('access_token'),
               },
               body: JSON.stringify({
-                'kind': $('#NewKind').val()
+                'kind': this.$refs.kind.value
               })
             })
             .then(resp => resp.json())
@@ -176,6 +205,30 @@ export default {
                 $('#side-checkbox').prop('checked', false);
                 showBanner('.banner.success', add.success);
                 this.getKinds();
+            }
+        },
+        async editKind() {
+            if (confirm('Вы действительно хотите изменить вид документа?')){
+                const del = await fetch(this.$store.state.backendUrl+'/api/docs/edit_kind/'+this.EditKindId, {
+                  method: 'PATCH',
+                  headers: {
+                    'X-CSRFToken': getCookie("csrftoken"),
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'Authorization': 'Token '+localStorage.getItem('access_token')
+                  },
+                  body: JSON.stringify({
+                    'kind': this.$refs.kind.value,
+                  })
+                })
+                .then(resp => resp.json())
+                if (del.error){
+                    showBanner('.banner.error', del.error)
+                    return false
+                } else {
+                    showBanner('.banner.success', del.success);
+                    this.getKinds();
+                }
+                this.SideBoxchecked = false
             }
         },
         async deleteKind(id) {

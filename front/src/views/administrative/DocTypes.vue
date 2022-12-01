@@ -3,7 +3,7 @@
     <div id="main-content">
         <AdministrativeGrid>
             <div class="GridContent">
-                <div class="table-content">
+                <div v-if="seenContent">
                     <div style="position:relative;">
                         <div class="inl-blocks">
                             <a href="#" @click = "addSidebox();">
@@ -51,6 +51,9 @@
                                 <td>{{ type.kind }}</td>
                                 <td>{{ type.type }}</td>
                                 <td>
+                                    <a href="javascript:void(0)" @click="editSidebox(type.id, type.kind, type.type);">
+                                        <font-awesome-icon icon="fa-solid fa-pen-to-square" :style="{ color: '#373c59' }"/>
+                                    </a>&nbsp;&nbsp;
                                     <a href="javascript:void(0)" @click="deleteType(type.id);">
                                         <font-awesome-icon icon="fa-solid fa-trash" :style="{ color: '#373c59' }"/>
                                     </a>
@@ -59,18 +62,76 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="load">
+                <div v-if="seenLoad">
                     <img src="../../assets/gifs/load.gif" style="margin: 0 auto;">
                 </div>
             </div>
         </AdministrativeGrid>
     </div>
-    <SideBox />
+    <SideBox>
+        <template v-slot:side-chb>
+            <input type="checkbox" id="side-checkbox" v-model="SideBoxChecked"/>
+        </template>
+        <template v-slot:sidebox-title>
+            <p v-bind:class="[AddClass]">Новый тип документа</p>
+            <p v-bind:class="[EditClass]">Изменение типа документа</p>
+            <p v-bind:class="[FindClass]">Поиск по типам документов</p>
+        </template>
+        <template v-slot:main-table-trs>
+            <tr>
+                <td>
+                    <center>Вид документа: </center>
+                </td>
+                <td v-bind:class="[AddClass]">
+                    <select ref="docKind" v-model="newtypekind" class="form-control">
+                        <option v-for="kind in listKinds">
+                            {{ kind.kind }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[EditClass]">
+                    <select ref="docKind" v-model="selectedKind" class="form-control">
+                        <option v-for="kind in listKinds">
+                            {{ kind.kind }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[FindClass]">
+                    <input type="text" ref="FindKind" class="form-control text-center">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <center>Наименование типа документа:</center>
+                </td>
+                <td>
+                    <input type="text" ref="DocType" class="form-control text-center">
+                </td>
+            </tr>
+        </template>
+        <template v-slot:sidebox-button>
+            <div v-bind:class="[AddClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', AddClass]"
+                    @click="addType();">Добавить</button>
+            </div>
+            <div v-bind:class="[EditClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', EditClass]"
+                    @click="editType();">Изменить</button>
+            </div>
+            <div v-bind:class="[FindClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', FindClass]"
+                    @click="findTypes();">Найти</button>
+            </div>
+        </template>
+    </SideBox>
 </template>
 
 <script>
 import AdministrativeGrid from '../../components/AdministrativeGrid.vue';
-import SideBox from '../../components/SideBox.vue';
+import SideBox from '../../components/sidebox_folder/SideBox.vue';
 import Header from "../../components/Header.vue";
 import LoadGif from "../../assets/gifs/load.gif";
 
@@ -78,6 +139,13 @@ export default {
     name: 'DocTypes',
     data() {
       return {
+        SideBoxChecked: false,
+        seenLoad:true,
+        seenContent:false,
+        AddClass: 'sidebox-deactive',
+        FindClass: 'sidebox-deactive',
+        EditClass: 'sidebox-deactive',
+        EditTypeId: 0,
         listKinds: [],
         listTypes: [],
         buttonText: '',
@@ -102,6 +170,7 @@ export default {
                  return false
               }
             })
+            console.log(this.listKinds)
         },
         async getTypes(find){
             let url = ''
@@ -124,8 +193,8 @@ export default {
                  return false
               }
             })
-            $('.load').empty();
-            $('.table-content').css('display', 'block');
+            this.seenLoad = false
+            this.seenContent = true
         },
         sorted(obj){
             switch(obj){
@@ -150,73 +219,34 @@ export default {
         },
         findTypes(){
             let find = ''
-            if ($('#FindKind').val() != '') {
-                find = 'kind='+$('#FindKind').val()+'&'
+            if (this.$refs.FindKind.value != '') {
+                find = 'kind='+this.$refs.FindKind.value
             }
-            if ($('#FindType').val() != '') {
-                find += 'type='+$('#FindType').val()
+            if (this.$refs.DocType.value != '') {
+                find += 'type='+this.$refs.DocType.value
             }
             this.getTypes(find)
-            $('#side-checkbox').prop('checked', false);
-            showBanner('.banner.success', 'Поиск завершен');
+            this.SideBoxChecked = false
+            showBanner('.banner.success', 'Поиск завершен')
         },
         addSidebox(){
-            $('.side-title').html('Добавить новый тип документа');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Вид документа: </center>
-                    </td>
-                    <td>
-                        <select class="form-control" id="docKind">
-            `
-            $.each(this.listKinds, function(index, kind){
-                trs += '<option>'+kind.kind+'</option>'
-            })
-            trs += `
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Наименование типа документа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="NewType">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Добавить');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.addType);
-            $('.sidebox-table-trs').html(trs);
+            this.AddClass = 'sidebox-active'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-deactive'
         },
         findSidebox(){
-            $('.side-title').html('Поиск типа документа');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Вид документа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindKind">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Тип документа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindType">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Поиск');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.findTypes);
-            $('.sidebox-table-trs').html(trs);
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-active'
+        },
+        editSidebox(id, kind, type){
+            this.EditTypeId = id
+            this.selectedKind = kind
+            this.$refs.DocType.value = type
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-active'
+            this.FindClass = 'sidebox-deactive'
+            this.SideBoxChecked = true
         },
         async addType(){
             const add = await fetch(this.$store.state.backendUrl+'/api/docs/new_type/', {
@@ -227,8 +257,8 @@ export default {
                 'Authorization': 'Token '+localStorage.getItem('access_token'),
               },
               body: JSON.stringify({
-                'kind': $('#docKind').val(),
-                'type': $('#NewType').val()
+                'kind': this.newtypekind,
+                'type': this.$refs.DocType.value
               })
             })
             .then(resp => resp.json())
@@ -236,9 +266,34 @@ export default {
                 showBanner('.banner.error', add.kind)
                 return false
             } else {
-                $('#side-checkbox').prop('checked', false);
+                this.SideBoxChecked = false
                 showBanner('.banner.success', add.success);
                 this.getTypes();
+            }
+        },
+        async editType() {
+            if (confirm('Вы действительно хотите изменить тип документа?')){
+                const del = await fetch(this.$store.state.backendUrl+'/api/docs/edit_type/'+this.EditTypeId, {
+                  method: 'PATCH',
+                  headers: {
+                    'X-CSRFToken': getCookie("csrftoken"),
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'Authorization': 'Token '+localStorage.getItem('access_token')
+                  },
+                  body: JSON.stringify({
+                    'kind': this.selectedKind,
+                    'type': this.$refs.DocType.value
+                  })
+                })
+                .then(resp => resp.json())
+                if (del.error){
+                    showBanner('.banner.error', del.error)
+                    return false
+                } else {
+                    showBanner('.banner.success', del.success);
+                    this.getTypes();
+                }
+                this.SideBoxChecked = false
             }
         },
         async deleteType(id) {

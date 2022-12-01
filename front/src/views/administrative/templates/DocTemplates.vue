@@ -84,7 +84,7 @@
 
 <script>
 import AdministrativeGrid from '../../../components/AdministrativeGrid.vue';
-import SideBox from '../../../components/SideBox.vue';
+import SideBox from '../../../components/sidebox_folder/SideBox.vue';
 import Header from "../../../components/Header.vue";
 import LoadGif from "../../../assets/gifs/load.gif";
 

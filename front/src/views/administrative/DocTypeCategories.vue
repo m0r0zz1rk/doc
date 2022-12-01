@@ -3,7 +3,7 @@
     <div id="main-content">
         <AdministrativeGrid>
             <div class="GridContent">
-                <div class="table-content">
+                <div v-if="seenContent">
                     <div style="position:relative;">
                         <div class="inl-blocks">
                             <a href="#" @click = "addSidebox();">
@@ -51,6 +51,9 @@
                                 <td style="text-align: left;">{{ category.type }}</td>
                                 <td>{{ category.category }}</td>
                                 <td class="action-td">
+                                    <a href="javascript:void(0)" @click="editSidebox(category.id, category.type, category.category);">
+                                        <font-awesome-icon icon="fa-solid fa-pen-to-square" :style="{ color: '#373c59' }"/>
+                                    </a>&nbsp;&nbsp;
                                     <a href="javascript:void(0)" @click="deleteCategory(category.id);">
                                         <font-awesome-icon icon="fa-solid fa-trash" :style="{ color: '#373c59' }"/>
                                     </a>
@@ -59,18 +62,98 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="load">
+                <div v-if="seenLoad">
                     <img src="../../assets/gifs/load.gif" style="margin: 0 auto;">
                 </div>
             </div>
         </AdministrativeGrid>
     </div>
-    <SideBox />
+    <SideBox>
+        <template v-slot:side-chb>
+            <input type="checkbox" id="side-checkbox" v-model="SideBoxChecked"/>
+        </template>
+        <template v-slot:sidebox-title>
+            <p v-bind:class="[AddClass]">Новая категория типа документа</p>
+            <p v-bind:class="[EditClass]">Изменение категории типа документа</p>
+            <p v-bind:class="[FindClass]">Поиск по категориям типов документов</p>
+        </template>
+        <template v-slot:main-table-trs>
+            <tr>
+                <td>
+                    <center>Вид документа: </center>
+                </td>
+                <td v-bind:class="[AddClass]">
+                    <select ref="docKind" v-model="modelKind" class="form-control" @click="addOnChange();">
+                        <option v-for="kind in listKinds">
+                            {{ kind.kind }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[EditClass]">
+                    <select ref="docKind" v-model="selectedKind" class="form-control" @click="editOnChange();">
+                        <option v-for="kind in listKinds">
+                            {{ kind.kind }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[FindClass]">
+                    <input type="text" ref="FindKind" class="form-control text-center">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <center>Тип документа:</center>
+                </td>
+                <td v-bind:class="[AddClass]">
+                    <select ref="docType" v-model="modelType" class="form-control">
+                        <option v-for="type in availableTypes">
+                            {{ type }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[EditClass]">
+                    <select ref="docType" v-model="selectedType" class="form-control">
+                        <option v-for="type in availableTypes">
+                            {{ type }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[FindClass]">
+                    <input type="text" ref="FindTypes" class="form-control text-center">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <center>Наименование категории типа:</center>
+                </td>
+                <td>
+                    <input type="text" ref="DocCategory" class="form-control text-center">
+                </td>
+            </tr>
+        </template>
+        <template v-slot:sidebox-button>
+            <div v-bind:class="[AddClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', AddClass]"
+                    @click="addCategory();">Добавить</button>
+            </div>
+            <div v-bind:class="[EditClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', EditClass]"
+                    @click="editCategory();">Изменить</button>
+            </div>
+            <div v-bind:class="[FindClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', FindClass]"
+                    @click="findCategories();">Найти</button>
+            </div>
+        </template>
+    </SideBox>
 </template>
 
 <script>
 import AdministrativeGrid from '../../components/AdministrativeGrid.vue';
-import SideBox from '../../components/SideBox.vue';
+import SideBox from '../../components/sidebox_folder/SideBox.vue';
 import Header from "../../components/Header.vue";
 import LoadGif from "../../assets/gifs/load.gif";
 
@@ -78,6 +161,15 @@ export default {
     name: 'DocTypeCategories',
     data() {
       return {
+        SideBoxChecked: false,
+        seenLoad:true,
+        seenContent:false,
+        AddClass: 'sidebox-deactive',
+        FindClass: 'sidebox-deactive',
+        EditClass: 'sidebox-deactive',
+        EditCatId: 0,
+        selectKind: '',
+        availableTypes: [],
         listKinds: [],
         listTypes: [],
         listCategories: [],
@@ -141,8 +233,8 @@ export default {
                  return false
               }
             })
-            $('.load').empty();
-            $('.table-content').css('display', 'block');
+            this.seenLoad = false
+            this.seenContent = true
         },
         sorted(obj){
             switch(obj){
@@ -166,60 +258,23 @@ export default {
             this.getCategories();
         },
         addSidebox(){
-            $('.side-title').html('Добавить новую категорию типа документа');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Вид документа: </center>
-                    </td>
-                    <td>
-                        <select class="form-control" id="docKind">
-            `
-            $.each(this.listKinds, function(index, kind){
-                trs += '<option>'+kind.kind+'</option>'
-            })
-            trs += `
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Тип документа:</center>
-                    </td>
-                    <td>
-                        <select class="form-control" id="docType"></select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Наименование категории типа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="NewCategory">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Добавить');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.addCategory);
-            $('.sidebox-table-trs').html(trs);
-            this.addOnchange()
-            this.fillType()
+            this.AddClass = 'sidebox-active'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-deactive'
         },
-        addOnchange(){
-            $('#docKind').prop("onchange", null).off("change");
-            $('#docKind').change(this.fillType);
-        },
-        async fillType(){
-            $("#docType").attr('disabled', true)
-            $("#docType").find("option").remove()
-            $.each(this.listTypes, function(index, tp){
-                if (tp.kind == $('#docKind').val()) {
-                    $('#docType').append('<option>'+tp.type+'</option>')
-                }
+        addOnChange(){
+            let th = this
+            this.availableTypes = []
+            $.each(this.listTypes.filter(function (el){ return el.kind == th.modelKind}), function(index, el){
+                th.availableTypes.push(el.type)
             })
-            $('#docType').attr('disabled', false)
+        },
+        editOnChange(){
+            let th = this
+            this.availableTypes = []
+            $.each(this.listTypes.filter(function (el){ return el.kind == th.selectedKind}), function(index, el){
+                th.availableTypes.push(el.type)
+            })
         },
         async addCategory(){
             const add = await fetch(this.$store.state.backendUrl+'/api/docs/new_category/', {
@@ -230,8 +285,8 @@ export default {
                 'Authorization': 'Token '+localStorage.getItem('access_token'),
               },
               body: JSON.stringify({
-                'type': $('#docKind').val()+' - '+$('#docType').val(),
-                'category': $('#NewCategory').val()
+                'type': this.modelKind+' - '+this.modelType,
+                'category': this.$refs.DocCategory.value
               })
             })
             .then(resp => resp.json())
@@ -239,55 +294,64 @@ export default {
                 showBanner('.banner.error', add.kind)
                 return false
             } else {
-                $('#side-checkbox').prop('checked', false);
+                this.SideBoxChecked = false;
                 showBanner('.banner.success', add.success);
                 this.getCategories();
             }
         },
+        async editCategory() {
+            if (confirm('Вы действительно хотите изменить категорию типа документа?')){
+                const del = await fetch(this.$store.state.backendUrl+'/api/docs/edit_category/'+this.EditCatId, {
+                  method: 'PATCH',
+                  headers: {
+                    'X-CSRFToken': getCookie("csrftoken"),
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'Authorization': 'Token '+localStorage.getItem('access_token')
+                  },
+                  body: JSON.stringify({
+                    'type': this.selectedKind+' - '+this.selectedType,
+                    'category': this.$refs.DocCategory.value
+                  })
+                })
+                .then(resp => resp.json())
+                if (del.error){
+                    showBanner('.banner.error', del.error)
+                    return false
+                } else {
+                    showBanner('.banner.success', del.success);
+                    this.getCategories();
+                    this.SideBoxChecked = false
+                }
+                this.SideBoxChecked = false
+            }
+        },
         findSidebox(){
-            $('.side-title').html('Поиск категории типа документа');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Вид документа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindKind">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Тип документа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindType">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Категория типа:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindCategory">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Поиск');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.findCategories);
-            $('.sidebox-table-trs').html(trs);
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-active'
+        },
+        editSidebox(id, type, cat){
+            this.EditCatId = id
+            let arr = type.split(' - ')
+            this.selectedKind = arr[0]
+            this.editOnChange()
+            this.selectedType = arr[1]
+            this.$refs.DocCategory.value = cat
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-active'
+            this.FindClass = 'sidebox-deactive'
+            this.SideBoxChecked = true
         },
         findCategories(){
             let find = ''
-            if ($('#FindKind').val() != '') {
-                find = 'kind='+$('#FindKind').val()+'&'
+            if (this.$refs.FindKind.value != '') {
+                find = 'kind='+this.$refs.FindKind.value+'&'
             }
-            if ($('#FindType').val() != '') {
-                find += 'type='+$('#FindType').val()+'&'
+            if (this.$refs.FindTypes.value != '') {
+                find += 'type='+this.$refs.FindTypes.value+'&'
             }
-             if ($('#FindCategory').val() != '') {
-                find += 'category='+$('#FindCategory').val()
+             if (this.$refs.DocCategory.value != '') {
+                find += 'category='+this.$refs.DocCategory.value
             }
             this.getCategories(find)
             $('#side-checkbox').prop('checked', false);
@@ -314,9 +378,9 @@ export default {
         }
     },
     created(){
-        this.getCategories();
         this.loadKinds();
         this.loadTypes();
+        this.getCategories();
     }
 }
 </script>

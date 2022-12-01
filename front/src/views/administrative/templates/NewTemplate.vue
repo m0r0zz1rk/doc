@@ -69,7 +69,7 @@
             </table>
         </template>
         <template v-slot:reqs-ch>
-            <a href="#" @click = "addSidebox();">
+            <a href="#" @click="addSidebox();">
                 <div class="side-button-1-wr">
                     <label class="side-button-1" for="side-checkbox">
                         <div class="side-b side-open">
@@ -89,7 +89,7 @@
                     <th>Убрать из шаблона</th>
                 </thead>
                 <tbody>
-                    <tr v-for="requisite in listRequisites">
+                    <tr v-for="requisite in selectedRequisites">
                         <td>{{ requisite.requisite }}</td>
                         <td>{{ requisite.req_type }}</td>
                         <td>
@@ -118,17 +118,20 @@
             </table>
         </template>
     </DocGrid>
+    <SideBox />
 </template>
 
 <script>
 import DocGrid from '../../../components/DocGrid.vue';
-import SideBox from '../../../components/SideBox.vue';
+import SideBox from '../../../components/sidebox_folder/SideBox.vue';
 import Header from "../../../components/Header.vue";
+import LoadGif from "../../../assets/gifs/load.gif";
 
 export default {
     name: 'NewTemplate',
     data() {
       return {
+        arrTextPossible: ['Текстовый', 'Числовой',],
         listKinds: [],
         listTypes: [],
         selectedTypes: [],
@@ -211,6 +214,7 @@ export default {
             })
             $('#category-content').css('display', 'block')
             $('#category-load').css('display', 'none')
+            console.log(this.listRequisites)
         },
         showCategoryContent(){
             $('#category-content').css('display', 'block')
@@ -246,6 +250,70 @@ export default {
             this.selectedCategories = lCategories
             this.disabledCategories = false
             this.showCategoryContent()
+        },
+        addSidebox(){
+            $('.advanced-sidebox').css('display', 'none');
+            $('.sidebox-button').css('display', 'none');
+            $('.sidebox-button').prop('disabled', true);
+            $('.side-title').html('Добавить реквизит к шаблону');
+            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
+            let th = this
+            let reqs = this.listRequisites
+            let trs = ''
+            $.each(reqs, async function(index, r){
+                let vals = ''
+                trs += '<tr class="border_bottom"><td class="text-center"><b>'+r.requisite+'</b></td><td class="text-center">'
+                if (th.tdValueReqType(r.req_type) != 'list') {
+                    trs += th.tdValueReqType(r.req_type)
+                } else {
+                    trs += '<button type="button" id="showPossVal" name="'+r.requisite+'" class="copm-style">Просмотр значений</button>'
+                }
+                trs += `
+                        </td>
+                    </tr>
+                `
+                console.log(trs)
+            })
+            $('.sidebox-button').html('Добавить');
+            $('.sidebox-button').prop("onclick", null).off("click");
+            $('.sidebox-button').click(this.addRequisite);
+            $('.sidebox-table-trs').html(trs);
+
+        },
+        tdValueReqType(text, name){
+            if (this.arrTextPossible.includes(text)){
+                if (text == 'Текстовый') {
+                    return 'Текстовое значение'
+                } else {
+                    return 'Числовое значение'
+                }
+            } else {
+                if (text == 'Дата (краткий формат)') {
+                    return 'ДД.ММ.ГГГГ г.'
+                } else if (text == 'Дата (полный формат)') {
+                    return 'ДД месяц ГГГГ г.'
+                } else {
+                    return 'list'
+                }
+            }
+        },
+        async showPossibleValuesReq(name){
+            $('.side-advanced-title').html('Список возможных значений реквизита "'+name+'"')
+            let adv_trs = ''
+            let values = await fetch(th.$store.state.backendUrl+'/api/docs/req_values?req_name='+name, {
+              method: 'GET',
+              headers: {
+                  'Authorization': 'Token '+localStorage.getItem('access_token'),
+              },
+            })
+            .then(resp => resp.json())
+            .then(values => {
+                $.each(values, function (i, val){
+                    adv_trs += val.possible_value+'<br>'
+                })
+            })
+            $('.advanced-table-trs').html(adv_trs)
+            $('.advanced-sidebox').css('display', 'block')
         },
         getTypes(){
 

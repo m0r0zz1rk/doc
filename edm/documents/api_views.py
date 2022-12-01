@@ -26,7 +26,7 @@ class DocKindsViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
-class DocKindsCDViewSet(viewsets.ModelViewSet):
+class DocKindsCUDViewSet(viewsets.ModelViewSet):
     """ Добавление/удаление вида документа """
     permission_classes = [permissions.IsAuthenticated, IsAdministrator]
     serializer_class = DocKindsSerializer
@@ -39,6 +39,20 @@ class DocKindsCDViewSet(viewsets.ModelViewSet):
             return JsonResponse({'success': 'Вид документа успешно добавлен'})
         else:
             return JsonResponse({'error': new_kind.errors})
+
+    def update(self, request, *args, **kwargs):
+        try:
+            kind = get_object_or_404(self.queryset, pk=self.kwargs['pk'])
+        except BaseException:
+            return JsonResponse({'error': 'Вид документа не найден'})
+        serialize = self.serializer_class(instance=kind,
+                                          data=request.data,
+                                          many=False)
+        if serialize.is_valid(raise_exception=True):
+            serialize.save()
+            return JsonResponse({'success': 'Вид документа успешно изменен'})
+        else:
+            return JsonResponse({'error': serialize.errors})
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -68,7 +82,7 @@ class DocTypesViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
-class DocTypesCDViewSet(viewsets.ModelViewSet):
+class DocTypesCUDViewSet(viewsets.ModelViewSet):
     """ Добавление/удаление типа документа """
     permission_classes = [permissions.IsAuthenticated, IsAdministrator]
     serializer_class = DocTypesSerializer
@@ -81,6 +95,20 @@ class DocTypesCDViewSet(viewsets.ModelViewSet):
             return JsonResponse({'success': 'Тип документа успешно добавлен'})
         else:
             return JsonResponse({'error': new_type.errors})
+
+    def update(self, request, *args, **kwargs):
+        try:
+            type = get_object_or_404(self.queryset, pk=self.kwargs['pk'])
+        except BaseException:
+            return JsonResponse({'error': 'Тип документа не найден'})
+        serialize = self.serializer_class(instance=type,
+                                          data=request.data,
+                                          many=False)
+        if serialize.is_valid(raise_exception=True):
+            serialize.save()
+            return JsonResponse({'success': 'Тип документа успешно изменен'})
+        else:
+            return JsonResponse({'error': serialize.errors})
 
     def destroy(self, request, *args, **kwargs):
         try:
@@ -112,7 +140,7 @@ class DocTypeCategoriesViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
-class DocTypeCategoriesCDViewSet(viewsets.ModelViewSet):
+class DocTypeCategoriesCUDViewSet(viewsets.ModelViewSet):
     """ Добавление/удаление категории типа документа """
     permission_classes = [permissions.IsAuthenticated, IsAdministrator]
     serializer_class = DocTypeCategoriesSerializer
@@ -125,6 +153,20 @@ class DocTypeCategoriesCDViewSet(viewsets.ModelViewSet):
             return JsonResponse({'success': 'Категория типа документа успешно добавлена'})
         else:
             return JsonResponse({'error': new_category.errors})
+
+    def update(self, request, *args, **kwargs):
+        try:
+            cat = get_object_or_404(self.queryset, pk=self.kwargs['pk'])
+        except BaseException:
+            return JsonResponse({'error': 'Категория типа документа не найдена'})
+        serialize = self.serializer_class(instance=cat,
+                                          data=request.data,
+                                          many=False)
+        if serialize.is_valid(raise_exception=True):
+            serialize.save()
+            return JsonResponse({'success': 'Категория типа документа успешно изменена'})
+        else:
+            return JsonResponse({'error': serialize.errors})
 
     def destroy(self, request, *args, **kwargs):
         try:

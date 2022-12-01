@@ -1,28 +1,34 @@
 <template>
-    <input type="checkbox" id="side-checkbox" />
+    <slot name="side-chb"></slot>
     <div class="side-panel">
         <label class="side-button-2" for="side-checkbox">+</label>
-        <div class="side-title"></div>
+        <div class="side-title">
+            <slot name="sidebox-title"></slot>
+        </div>
         <table style="margin: 0 auto; table-layout: fixed; width: 100%;">
            <tbody class="sidebox-table-trs">
+                <slot name="main-table-trs"></slot>
            </tbody>
         </table>
         <br>
-        <button type="button" class="copm-style sidebox-button"></button>
+        <slot name="sidebox-button"></slot>
         <br><br>
         <div class="advanced-sidebox">
             <div class="side-advanced-title"></div>
             <table style="margin: 0 auto; table-layout: fixed; width: 100%;" class="fl-table">
                <tbody class="advanced-table-trs">
+                 <slot name="advanced-table-trs"></slot>
                </tbody>
             </table>
             <br>
-        <button type="button" class="copm-style sidebox-adv-button"></button>
+        <slot name="adv-sidebox-button"></slot>
         </div>
     </div>
 </template>
 
 <script>
+import ListReqs from './ListReqs.vue';
+
 export default {
         name: 'SideBox',
     }
@@ -35,6 +41,16 @@ export default {
 }
 #side-checkbox {
     display: none;
+}
+.sidebox-active {
+  display: block;
+  visibility: visible;
+  pointer-events: auto;
+}
+.sidebox-deactive {
+  display: none;
+  visibility: collapse;
+  pointer-events: none;
 }
 .side-panel {
     position: fixed;
@@ -135,5 +151,8 @@ export default {
 .side-button-2:hover {
     transform: rotate(45deg) scale(1.1);
     color: #f15c4e;
+}
+tr.border_bottom td {
+  border-bottom: 1px solid #373c59;
 }
 </style>

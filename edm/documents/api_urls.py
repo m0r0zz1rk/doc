@@ -1,24 +1,27 @@
 from django.urls import path
 
-from documents.api_views import DocKindsViewSet, DocKindsCDViewSet, DocTypesViewSet, DocTypesCDViewSet, \
-    DocTypeCategoriesViewSet, DocTypeCategoriesCDViewSet, DocRequisitesViewSet, DocRequisiteTypesListViewSet, \
+from documents.api_views import DocKindsViewSet, DocKindsCUDViewSet, DocTypesViewSet, DocTypesCUDViewSet, \
+    DocTypeCategoriesViewSet, DocTypeCategoriesCUDViewSet, DocRequisitesViewSet, DocRequisiteTypesListViewSet, \
     DocRequisitesCDViewSet, RequisitePossibleValuesViewSet, RequisitePossibleValueCDViewSet, DocTemplatesViewSet
 
 urlpatterns = [
     path('doc_kinds/', DocKindsViewSet.as_view({'get': 'list'})),
 
-    path('new_kind/', DocKindsCDViewSet.as_view({'post': 'create'})),
-    path('delete_kind/<int:pk>', DocKindsCDViewSet.as_view({'delete': 'destroy'})),
+    path('new_kind/', DocKindsCUDViewSet.as_view({'post': 'create'})),
+    path('edit_kind/<int:pk>', DocKindsCUDViewSet.as_view({'patch': 'update'})),
+    path('delete_kind/<int:pk>', DocKindsCUDViewSet.as_view({'delete': 'destroy'})),
 
     path('doc_types/', DocTypesViewSet.as_view({'get': 'list'})),
 
-    path('new_type/', DocTypesCDViewSet.as_view({'post': 'create'})),
-    path('delete_type/<int:pk>', DocTypesCDViewSet.as_view({'delete': 'destroy'})),
+    path('new_type/', DocTypesCUDViewSet.as_view({'post': 'create'})),
+    path('edit_type/<int:pk>', DocTypesCUDViewSet.as_view({'patch': 'update'})),
+    path('delete_type/<int:pk>', DocTypesCUDViewSet.as_view({'delete': 'destroy'})),
 
     path('doc_categories/', DocTypeCategoriesViewSet.as_view({'get': 'list'})),
 
-    path('new_category/', DocTypeCategoriesCDViewSet.as_view({'post': 'create'})),
-    path('delete_category/<int:pk>', DocTypeCategoriesCDViewSet.as_view({'delete': 'destroy'})),
+    path('new_category/', DocTypeCategoriesCUDViewSet.as_view({'post': 'create'})),
+    path('edit_category/<int:pk>', DocTypeCategoriesCUDViewSet.as_view({'patch': 'update'})),
+    path('delete_category/<int:pk>', DocTypeCategoriesCUDViewSet.as_view({'delete': 'destroy'})),
 
     path('requisite_types/', DocRequisiteTypesListViewSet.as_view({'get': 'list'})),
 

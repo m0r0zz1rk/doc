@@ -72,7 +72,7 @@
                                     </div>
                                 </td>
                                 <td class="action-td">
-                                    <a href="javascript:void(0)" @click="editRequisite(requisite.id);">
+                                    <a href="javascript:void(0)" @click="editSidebox(requisite.id, requisite.req_type, requisite.requisite);">
                                         <font-awesome-icon icon="fa-solid fa-pen-to-square" :style="{ color: '#373c59' }"/>
                                     </a>&nbsp;&nbsp;
                                     <a href="javascript:void(0)" @click="deleteRequisite(requisite.id);">
@@ -89,12 +89,76 @@
             </div>
         </AdministrativeGrid>
     </div>
-    <SideBox />
+    <SideBox>
+        <template v-slot:side-chb>
+            <input type="checkbox" id="side-checkbox" v-model="SideBoxChecked"/>
+        </template>
+        <template v-slot:sidebox-title>
+            <p v-bind:class="[AddClass]">Новая реквизит</p>
+            <p v-bind:class="[EditClass]">Изменение реквизита</p>
+            <p v-bind:class="[FindClass]">Поиск по реквизитам</p>
+        </template>
+        <template v-slot:main-table-trs>
+            <tr>
+                <td>
+                    <center>Наименование реквизита: </center>
+                </td>
+                <td v-bind:class="[AddClass]">
+                    <input type="text" ref="addreq" class="form-control text-center">
+                </td>
+                <td v-bind:class="[EditClass]">
+                    <input type="text" ref="editreq" class="form-control text-center">
+                </td>
+                <td v-bind:class="[FindClass]">
+                    <input type="text" ref="findreq" class="form-control text-center">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <center>Тип значений реквизита:</center>
+                </td>
+                <td v-bind:class="[AddClass]">
+                    <select v-model="addTypeReq" class="form-control">
+                        <option v-for="type in listTypes">
+                            {{ type.req_type }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[EditClass]">
+                    <select v-model="editTypeReq" class="form-control">
+                        <option v-for="type in listTypes">
+                            {{ type.req_type }}
+                        </option>
+                    </select>
+                </td>
+                <td v-bind:class="[FindClass]">
+                    <input type="text" ref="findreqtype" class="form-control text-center">
+                </td>
+            </tr>
+        </template>
+        <template v-slot:sidebox-button>
+            <div v-bind:class="[AddClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', AddClass]"
+                    @click="addRequisite();">Добавить</button>
+            </div>
+            <div v-bind:class="[EditClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', EditClass]"
+                    @click="editRequisite();">Изменить</button>
+            </div>
+            <div v-bind:class="[FindClass]">
+                <button type="button"
+                    v-bind:class="['sidebox-add', 'copm-style', FindClass]"
+                    @click="findRequisites();">Найти</button>
+            </div>
+        </template>
+    </SideBox>
 </template>
 
 <script>
 import AdministrativeGrid from '../../components/AdministrativeGrid.vue';
-import SideBox from '../../components/SideBox.vue';
+import SideBox from '../../components/sidebox_folder/SideBox.vue';
 import Header from "../../components/Header.vue";
 import LoadGif from "../../assets/gifs/load.gif";
 
@@ -102,11 +166,17 @@ export default {
     name: 'DocRequisites',
     data() {
       return {
+        SideBoxChecked: false,
+        seenLoad:true,
+        seenContent:false,
+        AddClass: 'sidebox-deactive',
+        FindClass: 'sidebox-deactive',
+        EditClass: 'sidebox-deactive',
+        editReqId: 0,
         listTypes: [],
         listRequisites: [],
         buttonText: '',
         sort: 'type',
-        editElement: '',
         arrTextPossible: ['Текстовый', 'Числовой',],
         currentId: 0,
         currentReq: ''
@@ -184,37 +254,9 @@ export default {
             this.getRequisites();
         },
         addSidebox(){
-            $('.advanced-sidebox').css('display', 'none')
-            $('.side-title').html('Добавить новый реквизит');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Наименование реквизита: </center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="NewRequisite">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Тип значений реквизита:</center>
-                    </td>
-                    <td>
-                        <select class="form-control" id="reqType">
-                            `
-            $.each(this.listTypes, function(index, type){
-                trs += '<option>'+type.req_type+'</option>'
-            })
-            trs += `
-                                        </select>
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Добавить');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.addRequisite);
-            $('.sidebox-table-trs').html(trs);
+            this.AddClass = 'sidebox-active'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-deactive'
         },
         async addRequisite(){
             let add = await fetch(this.$store.state.backendUrl+'/api/docs/new_requisite/', {
@@ -225,8 +267,8 @@ export default {
                 'Authorization': 'Token '+localStorage.getItem('access_token'),
               },
               body: JSON.stringify({
-                'req_type': $('#reqType').val(),
-                'requisite': $('#NewRequisite').val()
+                'req_type': this.addTypeReq,
+                'requisite': this.$refs.addreq.value
               })
             })
             .then(resp => resp.json())
@@ -234,107 +276,39 @@ export default {
                 showBanner('.banner.error', add.requisite)
                 return false
             } else {
-                $('#side-checkbox').prop('checked', false);
+                this.SideBoxChecked = false
                 showBanner('.banner.success', add.success);
                 this.getRequisites();
             }
         },
         findSidebox(){
-            $('.advanced-sidebox').css('display', 'none')
-            $('.side-title').html('Поиск реквизитов');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Наименование:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindReq">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Тип значений:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="FindType">
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Поиск');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.findRequisites);
-            $('.sidebox-table-trs').html(trs);
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-deactive'
+            this.FindClass = 'sidebox-active'
         },
         findRequisites(){
             let find = ''
-            if ($('#FindReq').val() != '') {
-                find = 'requisite='+$('#FindReq').val()+'&'
+            if (this.$refs.findreq.value != '') {
+                find = 'requisite='+this.$refs.findreq.value+'&'
             }
-            if ($('#FindType').val() != '') {
-                find += 'type='+$('#FindType').val()
+            if (this.$refs.findreqtype.value != '') {
+                find += 'type='+this.$refs.findreqtype.value
             }
             this.getRequisites(find)
-            $('#side-checkbox').prop('checked', false);
+            this.SideBoxChecked = false
             showBanner('.banner.success', 'Поиск завершен');
         },
-        async editRequisite(id){
-            this.editElement = id
-            $('#side-checkbox').prop('checked', true);
-            $('.advanced-sidebox').css('display', 'none')
-            $('.side-title').html('Редактирование реквизита');
-            $('.sidebox-table-trs').html('<tr><td ><img src="'+LoadGif+'" style="margin: 0 auto;"></td></tr>');
-            let editRequisite = await fetch(this.$store.state.backendUrl+'/api/docs/requisite/'+id, {
-              method: 'GET',
-              headers: {
-                  'Authorization': 'Token '+localStorage.getItem('access_token'),
-              },
-            })
-            .then(resp => {
-              if (resp.status == 200) {
-                  return resp.json()
-              } else {
-                 showBanner('.banner.error', 'Произошла ошибка, повторите попытку позже')
-                 return false
-              }
-            })
-            let trs = `
-                <tr>
-                    <td>
-                        <center>Наименование:</center>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control text-center" id="EditReq"`
-            trs += 'value="'+editRequisite.requisite +'"'
-            trs += `>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <center>Тип значений:</center>
-                    </td>
-                    <td>
-                        <select class="form-control text-center" id="reqType">
-                            `
-            $.each(this.listTypes, function(index, type){
-                if (type.req_type == editRequisite.req_type) {
-                    trs += '<option selected>'+type.req_type+'</option>'
-                } else {
-                    trs += '<option>'+type.req_type+'</option>'
-                }
-            })
-            trs += `
-                                        </select>
-                    </td>
-                </tr>
-            `
-            $('.sidebox-button').html('Изменить');
-            $('.sidebox-button').prop("onclick", null).off("click");
-            $('.sidebox-button').click(this.edit_req);
-            $('.sidebox-table-trs').html(trs);
+        editSidebox(id, req_type, name){
+            this.editTypeReq = req_type
+            this.$refs.editreq.value = name
+            this.editReqId = id
+            this.AddClass = 'sidebox-deactive'
+            this.EditClass = 'sidebox-active'
+            this.FindClass = 'sidebox-deactive'
+            this.SideBoxChecked = true
         },
-        async edit_req(){
-            const ed = await fetch(this.$store.state.backendUrl+'/api/docs/requisite/'+this.editElement+'/', {
+        async editRequisite(){
+            const ed = await fetch(this.$store.state.backendUrl+'/api/docs/requisite/'+this.editReqId+'/', {
               method: 'PATCH',
               headers: {
                 'X-CSRFToken': getCookie("csrftoken"),
@@ -342,8 +316,8 @@ export default {
                 'Authorization': 'Token '+localStorage.getItem('access_token')
               },
               body: JSON.stringify({
-                'req_type': $('#reqType').val(),
-                'requisite': $('#EditReq').val()
+                'req_type': this.editTypeReq,
+                'requisite': this.$refs.editreq.value
               })
             })
             .then(resp => resp.json())
@@ -352,7 +326,7 @@ export default {
                 return false
             } else {
                 showBanner('.banner.success', ed.success);
-                $('#side-checkbox').prop('checked', false);
+                this.SideBoxChecked = false
                 this.getRequisites();
             }
         },
@@ -457,7 +431,7 @@ export default {
             .then(resp => resp.json())
             let adv_trs = ''
             $.each(values, function(index, value){
-                 adv_trs += '<tr><td class="text-center">'+value. possible_value+'</td>'
+                 adv_trs += '<tr><td class="text-center">'+value.possible_value+'</td>'
                  adv_trs += `
                     <td class="text-center"><input type="checkbox" id="PossValues" value="`+value.id+`"></td>
                  `

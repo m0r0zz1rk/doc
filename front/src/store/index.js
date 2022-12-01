@@ -8,7 +8,7 @@ export default createStore({
         storage: window.localStorage,
   })],
   state: {
-    backendUrl: process.env.BACKEND_URL,
+    backendUrl: process.env.VUE_APP_BACKEND_URL,
     token: localStorage.getItem('access_token') || '',
     admin: localStorage.getItem('is_admin') || '',
     status: ''
